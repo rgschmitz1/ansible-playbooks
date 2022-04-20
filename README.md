@@ -4,5 +4,5 @@ These playbooks are for personal educational purposes, these likely do not follo
 ## running playbooks
 ```
 # Prompt for root user password and run playbook
-ansible-playbook -K <playbook_name>.yml
+ansible-playbook -i inventory.ini -K <playbook_name>.yml
 ```

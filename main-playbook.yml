@@ -1,8 +1,3 @@
 ---
-- hosts: localhost
-
 - name: Install docker and docker-compose
   import_playbook: install-docker.yml
-  vars:
-    host: localhost
-    username: bschmitz
