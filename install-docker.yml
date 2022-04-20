@@ -1,9 +1,7 @@
 ---
-- hosts: localhost
-  remote_user: bschmitz
+- hosts: "{{ host }}"
   become: true
   tasks:
-
     - name: Install dependencies
       apt:
         pkg:
@@ -47,7 +45,7 @@
 
     - name: Adding user to docker group
       user:
-        name: bschmitz
+        name: "{{ username }}"
         groups: docker
         append: yes
 
