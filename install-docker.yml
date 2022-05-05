@@ -1,6 +1,9 @@
 ---
 - hosts: all
   become: true
+  vars:
+    arch: {"x86_64": "amd64", "aarch64": "arm64"}
+
   tasks:
     - name: Install dependencies
       apt:
@@ -20,7 +23,7 @@
 
     - name: Add docker repository
       apt_repository:
-        repo: deb https://download.docker.com/linux/ubuntu focal stable
+        repo: "deb [arch={{ arch[ansible_architecture] }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
 
     - name: Install docker-ce and containerd
@@ -45,12 +48,25 @@
 
     - name: Adding user to docker group
       user:
-        name: "{{ username }}"
+        name: "{{ ansible_user }}"
         groups: docker
         append: yes
 
-    - name: Install docker-compose
-      get_url:
-        url: https://github.com/docker/compose/releases/download/v2.4.1/docker-compose-linux-x86_64
-        dest: /usr/local/bin/docker-compose
-        mode: 0755
+    - name: Install latest docker-compose
+      block:
+        - name: Determine docker-compose latest release
+          become: false
+          uri:
+            url: "https://api.github.com/repos/docker/compose/releases/latest"
+            body_format: json
+          register: _docker_compose_latest
+          until: _docker_compose_latest.status == 200
+          retries: 2
+
+        - name: "Install docker-compose {{ _docker_compose_latest.json.tag_name }}"
+          become: true
+          get_url:
+            url: "https://github.com/docker/compose/releases/download/{{ _docker_compose_latest.json.tag_name }}/docker-compose-linux-{{ ansible_architecture }}"
+            dest: /usr/local/bin/docker-compose
+            mode: 0755
+            force: true
