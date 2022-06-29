@@ -1,0 +1,16 @@
+---
+- name: Determine docker-compose latest release
+  become: no
+  uri:
+    url: "https://api.github.com/repos/docker/compose/releases/latest"
+    body_format: json
+  register: _docker_compose_latest
+  until: _docker_compose_latest.status == 200
+  retries: 2
+
+- name: "Install docker-compose {{ _docker_compose_latest.json.tag_name }}"
+  get_url:
+    url: "https://github.com/docker/compose/releases/download/{{ _docker_compose_latest.json.tag_name }}/docker-compose-linux-{{ ansible_architecture }}"
+    dest: /usr/local/bin/docker-compose
+    mode: 0755
+    force: yes

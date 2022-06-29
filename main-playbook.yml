@@ -1,3 +1,5 @@
 ---
 - name: Install docker and docker-compose
-  import_playbook: install-docker.yml
+  hosts: all
+  roles:
+    - docker

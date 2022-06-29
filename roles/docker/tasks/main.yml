@@ -1,10 +1,7 @@
 ---
-- hosts: all
-  become: true
-  vars:
-    arch: {"x86_64": "amd64", "aarch64": "arm64"}
-
-  tasks:
+- name: Set become=yes on all role tasks
+  become: yes
+  block:
     - name: Install dependencies
       apt:
         pkg:
@@ -15,17 +12,17 @@
           - software-properties-common
         state: present
         cache_valid_time: 3600
-
+    
     - name: Add GPG key
       apt_key:
         url: https://download.docker.com/linux/ubuntu/gpg
         state: present
-
+    
     - name: Add docker repository
       apt_repository:
         repo: "deb [arch={{ arch[ansible_architecture] }}] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
         state: present
-
+    
     - name: Install docker-ce and containerd
       apt:
         pkg:
@@ -34,39 +31,28 @@
           - containerd.io
         state: latest
         cache_valid_time: 3600
-
+    
     - name: Check docker is active
       service:
         name: docker
         state: started
         enabled: yes
-
+    
     - name: Ensure docker group exists
+      become: no
       group:
         name: docker
         state: present
-
-    - name: Adding user to docker group
+    
+    - name: "Adding {{ ansible_user }} to docker group"
       user:
         name: "{{ ansible_user }}"
         groups: docker
         append: yes
 
-    - name: Install latest docker-compose
-      block:
-        - name: Determine docker-compose latest release
-          become: false
-          uri:
-            url: "https://api.github.com/repos/docker/compose/releases/latest"
-            body_format: json
-          register: _docker_compose_latest
-          until: _docker_compose_latest.status == 200
-          retries: 2
-
-        - name: "Install docker-compose {{ _docker_compose_latest.json.tag_name }}"
-          become: true
-          get_url:
-            url: "https://github.com/docker/compose/releases/download/{{ _docker_compose_latest.json.tag_name }}/docker-compose-linux-{{ ansible_architecture }}"
-            dest: /usr/local/bin/docker-compose
-            mode: 0755
-            force: true
+    - include_tasks: docker-compose.yml
+      when: docker_install_compose | bool
+    
+    - name: Reset ssh connection to allow user changes
+      meta:
+        reset_connection
