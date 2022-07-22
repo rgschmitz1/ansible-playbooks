@@ -1,6 +1,5 @@
 ---
 - name: Install docker and docker-compose
   hosts: all
-  become: yes
   roles:
-    - docker
+    - {role: rgschmitz1.docker, become: yes}
